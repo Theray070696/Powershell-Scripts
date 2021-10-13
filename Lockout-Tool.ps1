@@ -3,7 +3,7 @@
 # Written by Theray070696. My other scripts can be found at https://www.github.com/Theray070696/Powershell-Scripts
 #########################################################################################################################
 
-# Add all your domain controllers here. Comma separated list.
+# Add all your domain controllers here. Comma separated list. If empty, it will grab the domain controller your machine is currently connected to.
 $DomainControllers = @("")
 
 #Updates the dropdown with the list of currently locked users.
@@ -14,15 +14,29 @@ function UpdateLockedUsers($Dropdown)
     $Dropdown.Items.Clear()
 	
 	$LockedUsers = New-Object System.Collections.Generic.List[string]
-
-    $DomainControllers | %{
-		$Users = Search-ADAccount -Server $_ -LockedOut
+	
+	if($DomainControllers.Length -eq 1 -and $DomainControllers[0] -eq "")
+	{
+		$Users = Search-ADAccount -LockedOut
 
 		ForEach($User in $Users)
 		{
 			if($User.LockedOut)
 			{
 				$LockedUsers.Add($User.SamAccountName)
+			}
+		}
+	} else
+	{
+		$DomainControllers | %{
+			$Users = Search-ADAccount -Server $_ -LockedOut
+
+			ForEach($User in $Users)
+			{
+				if($User.LockedOut)
+				{
+					$LockedUsers.Add($User.SamAccountName)
+				}
 			}
 		}
 	}
@@ -41,7 +55,6 @@ function UpdateLockedUsers($Dropdown)
 	$LockedUserCountLabel.Text = "Number of Locked Users: " + ($Dropdown.Items.Count)
 }
 
-# Actually starts the lockout tool. Remove the function declaration to have the tool automatically start when running the .ps1 file
 function Lockout-Tool()
 {
 	$voice = New-Object -ComObject Sapi.spvoice
@@ -86,9 +99,15 @@ function Lockout-Tool()
 	{
         if($User_Dropdown.SelectedItem)
         {
-		    $DomainControllers | %{
-			    Unlock-ADAccount -Server $_ -Identity $User_Dropdown.SelectedItem
-		    }
+			if($DomainControllers.Length -eq 1 -and $DomainControllers[0] -eq "")
+			{
+				Unlock-ADAccount -Identity $User_Dropdown.SelectedItem
+			} else
+			{
+				$DomainControllers | %{
+					Unlock-ADAccount -Server $_ -Identity $User_Dropdown.SelectedItem
+				}
+			}
 			
 		    UpdateLockedUsers $User_Dropdown
 		    $User_Dropdown.Text = ""
@@ -98,4 +117,9 @@ function Lockout-Tool()
 	$timer.Add_Tick({UpdateLockedUsers $User_Dropdown})
 	$timer.Start()
 	$main_form.ShowDialog()
+}
+
+if($MyInvocation.InvocationName -ne "." -and $MyInvocation.InvocationName -ne "Import-Module")
+{
+	Lockout-Tool
 }

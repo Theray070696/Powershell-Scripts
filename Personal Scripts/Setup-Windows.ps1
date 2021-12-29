@@ -49,6 +49,8 @@ if($IsWin10 -or $IsWin11)
 	if($lastexitcode -eq 0) { Write-Host "Git installed successfully." }
 	winget install IrfanSkiljan.IrfanView
 	if($lastexitcode -eq 0) { Write-Host "IrfanView installed successfully." }
+	winget install Audacity.Audacity
+	if($lastexitcode -eq 0) { Write-Host "Audacity installed successfully." }
 	
 	if($Personal) # Install programs that aren't fit for work computers.
 	{

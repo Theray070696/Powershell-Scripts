@@ -1,6 +1,6 @@
 Hello there!
 
-These are a handful of scripts I've written at my IT job to make my life easier, and I hope some of them can make your life easier!
+These are a handful of scripts I've written at my IT job and in my free time to make my life easier, and I hope some of them can make your life easier!
 
 If a script has any prerequisites, they're listed in the header.
 

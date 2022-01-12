@@ -13,7 +13,7 @@ param
     [switch] $AutoDelete # Note, I'd recommand leaving this off and manually checking the files so you're not left with a file that had a broken encode and no original. I haven't had this happen yet, but I'm not responsible for any loss caused by this switch.
 )
 
-$Version = 1.0.0
+$Version = 1.1.0
 
 function CompleteNotification
 {
@@ -32,7 +32,13 @@ function CompleteNotification
 
 function Compress-File($File)
 {
-    ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a -c:v hevc_nvenc -rc constqp -qp 24 -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_CRF24_HEVC.mp4"
+    if($PSCmdlet.MyInvocation.BoundParameters["Verbose"].IsPresent)
+    {
+        ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a -c:v hevc_nvenc -rc constqp -qp 24 -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_CRF24_HEVC.mp4"
+    } else
+    {
+        ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a -c:v hevc_nvenc -rc constqp -qp 24 -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_CRF24_HEVC.mp4" -hide_banner -loglevel error -stats
+    }
 
     if($AutoDelete)
     {

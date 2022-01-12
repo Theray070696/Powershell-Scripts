@@ -58,7 +58,7 @@ function Compress-Folder([string]$Folder)
         if($Recurse -and $Item -is [System.IO.DirectoryInfo])
         {
             Write-Host Compressing directory $Item.FullName
-            Compress-Folder $Item
+            Compress-Folder $Item.FullName
         } elseif($Item.Extension -eq '.MP4' -and -not $Item.Name.EndsWith('_CRF24_HEVC.mp4'))
         {
             Write-Host Compressing $Item.Name

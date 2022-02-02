@@ -11,35 +11,35 @@ param(
     [string]$Output
 )
 
-If($PSVersionTable.PSVersion.Major -eq 7)
+if($PSVersionTable.PSVersion.Major -eq 7)
 {
     Write-Error "This script is incompatible with PowerShell 7, and is only verified to work currently on PowerShell 5."
     $SkipRemainder = $True
-} Else
+} else
 {
-    If(-Not (Get-Command Get-AzureADGroup -ea SilentlyContinue))
+    if(-Not (Get-Command Get-AzureADGroup -ea SilentlyContinue))
     {
         Write-Warning "This function requires a connection to AzureAD. Prompting Now."
-	  
-        If(-Not (Get-Command Connect-AzureAD -ea SilentlyContinue))
+      
+        if(-Not (Get-Command Connect-AzureAD -ea SilentlyContinue))
         {
             Write-Error "Could not find command to connect to AzureAD."
             Write-Error "Please run Install-Module -Name AzureAD in an administrator PowerShell window to install the required module."
             $SkipRemainder = $True
-        } Else
+        } else
         {
             Connect-AzureAD
-		
-            If(-not (Get-Command Get-AzureADGroup -ea SilentlyContinue))
+        
+            if(-not (Get-Command Get-AzureADGroup -ea SilentlyContinue))
             {
-  	            Write-Warning "Could not connect to AzureAD. Verify credentials and try again later."
+                Write-Warning "Could not connect to AzureAD. Verify credentials and try again later."
                 $SkipRemainder = $True
             }
         }
     }
 }
 
-If($SkipRemainder -ne $True)
+if($SkipRemainder -ne $True)
 {
     $MemberCollection = New-Object System.Collections.Generic.List[System.Object]
 
@@ -63,11 +63,11 @@ If($SkipRemainder -ne $True)
         }
     }
 
-    If($MemberCollection.Count -gt 0)
+    if($MemberCollection.Count -gt 0)
     {
         $MemberCollection | Export-CSV $Output -NoTypeInformation
         Write-Host -f Green "`n*** Folder Permission Report Generated Successfully!***"
-    } Else
+    } else
     {
         Write-Host -f Red "Error Generating User Membership Report!"
     }

@@ -1,4 +1,5 @@
-function Add-BlockedSender {
+function Add-BlockedSender
+{
   <#
     .SYNOPSIS
     Adds a blocked sender address or domain to an Exchange Online spam policy.
@@ -29,84 +30,91 @@ function Add-BlockedSender {
   #>
 
   # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-  [CmdletBinding()]
-  param (
-    [Parameter(ValueFromPipeline=$True,
-      ValueFromPipelineByPropertyName=$True,  
-      HelpMessage='Must be one or more valid, comma-separated email addresses.')]
-      [string[]]$SenderAddress,
+[CmdletBinding()]
+param(
+    [Parameter(ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True, HelpMessage='Must be one or more valid, comma-separated email addresses.')]
+        [string[]]$SenderAddress,
     [Parameter(HelpMessage='Must be one or more valid, comma-separated email domains.')]
-      [string]$SenderDomain,
+        [string]$SenderDomain,
     [Parameter(HelpMessage='The name of an existing Spam Policy in your Exchange Online tenent. Default is Default.')]
-      [string]$SpamPolicy = 'Default'
-  )
+        [string]$SpamPolicy = 'Default'
+)
 
-  BEGIN {
-    # Test for connection to Microsoft Online.
-    if (-not (Get-Command Get-UnifiedGroup -ea silentlycontinue)) {
-      Write-Warning "This function requires a connection to Office 365. Prompting Now."
-	  
-	  if(-not (Get-Command Connect-ExchangeOnline -ea silentlycontinue)) {
-	    Write-Error "Could not find command to connect to Exchange Online."
-		Write-Error "Please run Install-Module -Name ExchangeOnlineManagement in an administrator PowerShell window to install the required module."
-		$SkipRemainder = $True
-      } else {
-	    Connect-ExchangeOnline
-		
-	    if (-not (Get-Command Get-UnifiedGroup -ea silentlycontinue)) {
-  	      Write-Warning "Could not connect to Office 365. Verify credentials and try again later."
-          $SkipRemainder = $True
-	    }
-	  }
-    }
+    BEGIN
+    {
+        # Test for connection to Microsoft Online.
+        if(-not (Get-Command Get-UnifiedGroup -ea silentlycontinue))
+        {
+            Write-Warning "This function requires a connection to Office 365. Prompting Now."
 
-    # Validate the specified sender domain.
-    if ($SenderDomain -and ($SenderDomain -notlike "*.*" `
-      -or $SenderDomain -like "*@*")) {
-      Write-Warning "Invalid sender domain"
-      $SkipRemainder = $True
-    }
+            if(-not (Get-Command Connect-ExchangeOnline -ea silentlycontinue))
+            {
+                Write-Error "Could not find command to connect to Exchange Online."
+                Write-Error "Please run Install-Module -Name ExchangeOnlineManagement in an administrator PowerShell window to install the required module."
+                $SkipRemainder = $True
+            } else
+            {
+                Connect-ExchangeOnline
 
-    if ($SkipRemainder -ne $True) {
-      # Get the BlockedSenders and BlockedSenderDomains values from 
-      # the Exchange Online Spam Policy and save them to variables for
-      # later use.
-      $FilterPolicy = (Get-HostedContentFilterPolicy -Identity $SpamPolicy)
-      $BlockedSenders = (($FilterPolicy | Select -ExpandProperty `
-        BlockedSenders).Sender | foreach{$_.Address})
-      $BlockedSenderDomains = ($FilterPolicy | Select -ExpandProperty `
-        BlockedSenderDomains).Domain
-      # Set a variable for testing the sender addresses later.
-      $EmailRegex = '^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})$'
-    }
-  }
-
-  PROCESS {
-    if ($SkipRemainder -ne $True) {
-      foreach ($Address in $SenderAddress) {
-        # Validate the sender address parameter.
-        if ($Address -and ($Address -notmatch $EmailRegex)) {
-          Write-Warning "Invalid sender address: $Address."
-          $SkipRemainder = $True
-          Return
+                if(-not (Get-Command Get-UnifiedGroup -ea silentlycontinue))
+                {
+                    Write-Warning "Could not connect to Office 365. Verify credentials and try again later."
+                    $SkipRemainder = $True
+                }
+            }
         }
-        # Add the address to the BlockedSenders variable.
-        $BlockedSenders += $Address
-      }
-    }
-  }
 
-  END {
-    if ($SkipRemainder -ne $True) {
-      # Set the new BlockedSenders value.
-      if ($BlockedSenders) {Set-HostedContentFilterPolicy -Identity `
-        $SpamPolicy -BlockedSenders $BlockedSenders}
-      # Set the new BlockedSenderDomains value.
-      if ($SenderDomain) {
-        $BlockedSenderDomains += $SenderDomain
-        Set-HostedContentFilterPolicy -Identity $SpamPolicy `
-          -BlockedSenderDomains $BlockedSenderDomains
-      }
+        # Validate the specified sender domain.
+        if($SenderDomain -and ($SenderDomain -notlike "*.*" -or $SenderDomain -like "*@*"))
+        {
+            Write-Warning "Invalid sender domain"
+            $SkipRemainder = $True
+        }
+
+        if($SkipRemainder -ne $True)
+        {
+            # Get the BlockedSenders and BlockedSenderDomains values from 
+            # the Exchange Online Spam Policy and save them to variables for
+            # later use.
+            $FilterPolicy = (Get-HostedContentFilterPolicy -Identity $SpamPolicy)
+            $BlockedSenders = (($FilterPolicy | Select -ExpandProperty BlockedSenders).Sender | foreach{$_.Address})
+            $BlockedSenderDomains = ($FilterPolicy | Select -ExpandProperty BlockedSenderDomains).Domain
+            # Set a variable for testing the sender addresses later.
+            $EmailRegex = '^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})$'
+        }
     }
-  }
+
+    PROCESS
+    {
+        if($SkipRemainder -ne $True)
+        {
+            foreach ($Address in $SenderAddress)
+            {
+                # Validate the sender address parameter.
+                if($Address -and ($Address -notmatch $EmailRegex))
+                {
+                    Write-Warning "Invalid sender address: $Address."
+                    $SkipRemainder = $True
+                    Return
+                }
+                # Add the address to the BlockedSenders variable.
+                $BlockedSenders += $Address
+            }
+        }
+    }
+
+    END
+    {
+        if($SkipRemainder -ne $True)
+        {
+            # Set the new BlockedSenders value.
+            if($BlockedSenders) {Set-HostedContentFilterPolicy -Identity $SpamPolicy -BlockedSenders $BlockedSenders}
+            # Set the new BlockedSenderDomains value.
+            if($SenderDomain)
+            {
+                $BlockedSenderDomains += $SenderDomain
+                Set-HostedContentFilterPolicy -Identity $SpamPolicy -BlockedSenderDomains $BlockedSenderDomains
+            }
+        }
+    }
 }

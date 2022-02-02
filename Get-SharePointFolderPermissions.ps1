@@ -53,9 +53,9 @@ Function Get-PnPPermissions([Microsoft.SharePoint.Client.SecurableObject]$Object
             if(-Not $IncludeLimited)
             {
                 #Remove Limited Access
-                $PermissionLevels = ($PermissionLevels | Where { $_ –ne "Limited Access"}) -join ","
-                If($PermissionLevels.Length -eq 0) {Continue}
-                $PermissionLevels = ($PermissionLevels | Where { $_ –ne "System.LimitedEdit"}) -join "," # I think this is what the above is trying to acomplish, but I need to double check
+                #$PermissionLevels = ($PermissionLevels | Where { $_ –ne "Limited Access"}) -join ","
+                #$PermissionLevels = ($PermissionLevels | Where { $_ –ne "System.LimitedEdit"}) -join "," # I think this is what the above is trying to acomplish, but I need to double check
+                $PermissionLevels = ($PermissionLevels | Where { $_ –ne "Limited Access"} | Where { $_ –ne "System.LimitedEdit"}) -join ","
                 If($PermissionLevels.Length -eq 0) {Continue}
             }
          
@@ -89,8 +89,7 @@ Function Get-PnPPermissions([Microsoft.SharePoint.Client.SecurableObject]$Object
                     
                     Write-Verbose "Added to PermissionCollection: Folder: $FolderName User: $($User.Title) Type: $PermissionType Permissions: $PermissionLevels GrantedThrough: $($RoleAssignment.Member.LoginName)"
                 }
-            }
-            Else
+            } else
             {
                 if(-Not $IncludeSystem -And $PermissionType -eq "User" -And $RoleAssignment.Member.Title -eq "System Account")
                 {
@@ -110,8 +109,7 @@ Function Get-PnPPermissions([Microsoft.SharePoint.Client.SecurableObject]$Object
                 Write-Verbose "Added to PermissionCollection: Folder: $FolderName User: $($RoleAssignment.Member.Title) Type: $PermissionType Permissions: $PermissionLevels GrantedThrough: $($RoleAssignment.Member.LoginName)"
             }
         }
-    }
-    Catch
+    } Catch
     {
         Write-Host -f Red "Error Generating Folder Permission Report!" $_.Exception.Message
     }
@@ -161,7 +159,7 @@ If($PermissionCollection.Count -gt 0)
     #Export Permissions to CSV File
     $PermissionCollection | Export-CSV $ReportFile -NoTypeInformation
     Write-Host -f Green "`n*** Folder Permission Report Generated Successfully!***" # Yeah this could be better tbh, but fuggit
-} Else
+} else
 {
     Write-Host -f Red "Error Generating Folder Permission Report!"
 }

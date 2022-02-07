@@ -39,9 +39,9 @@ function Block-Email
     if([string]::IsNullOrEmpty($EmlFileName))
     {
         if(Test-Path $EMLSaveLocation)
-		{
-			$EmlFileName = $EMLSaveLocation
-		}
+        {
+            $EmlFileName = $EMLSaveLocation
+        }
     }
 
     if([string]::IsNullOrEmpty($EmlFileName))
@@ -56,19 +56,20 @@ function Block-Email
     # Grab the From property from the converted file.
     $From = Select-Object -InputObject $ConvertedEML -Property From
 
-    # Run regex, save parsed string.
-    $From -match '\<([^\<]*)\>'
+    # Run regex.
+    if($From -match '\<([^\<]*)\>')
+    {
+        # Save the first result to a variable.
+        $fromText = $Matches[1]
 
-    # Save the first result to a variable.
-    $fromText = $Matches[1]
+        Write-Host Email Address is $fromText.
 
-    Write-Host Email Address is $fromText.
+        # Block the sender in Office 365
+        Add-BlockedSender -SenderAddress $fromText
 
-    # Block the sender in Office 365
-    Add-BlockedSender -SenderAddress $fromText
+        Write-Host Blocked $fromText.
 
-    Write-Host Blocked $fromText.
-
-    # Remove the EML File so it's not grabbed next time.
-    Remove-Item $EmlFileName
+        # Remove the EML File so it's not grabbed next time.
+        Remove-Item $EmlFileName
+    }
 }

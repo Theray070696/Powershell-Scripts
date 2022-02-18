@@ -7,6 +7,9 @@
 # Set this to where you download .eml files to by default. Will only be checked if no parameter was passed.
 $EMLSaveLocation = ""
 
+# This list contains known mass-hosting domains. Modify this to include any domains you never want to block the domain of. The script will always ask before blocking a domain.
+$KnownProviders = @('gmail.com', 'outlook.com', 'hotmail.com', 'pm.me', 'protonmail.com', 'aol.com', 'yahoo.com', 'icloud.com', 'msn.com', 'comcast.net', 'cox.net', 'att.net', 'charter.net', 'mail.com', 'frontiernet.net', 'mac.com')
+
 . .\Add-BlockedSender.ps1
 . .\Convert-EML.ps1
 
@@ -68,6 +71,25 @@ function Block-Email
         Add-BlockedSender -SenderAddress $fromText
 
         Write-Host Blocked $fromText.
+        
+        # Check what the sender domain is, and ask if the user wants to block it if it's not from email providers such as gmail.
+        $SenderDomain = $fromText.Split('@')[1]
+        
+        Write-Host $($KnownProviders -contains $SenderDomain)
+        
+        if(-not ($KnownProviders -contains $SenderDomain))
+        {
+            $Confirmation = Read-Host "Email domain $SenderDomain is not in known common email provider list, recommend blocking it if it's not recognized. Block? [y/N]"
+            
+            if($Confirmation -eq 'y')
+            {
+                Write-Host "Blocking $SenderDomain."
+                
+                Add-BlockedSender -SenderDomain $SenderDomain
+                
+                Write-Host "Blocked $SenderDomain."
+            }
+        }
 
         # Remove the EML File so it's not grabbed next time.
         Remove-Item $EmlFileName

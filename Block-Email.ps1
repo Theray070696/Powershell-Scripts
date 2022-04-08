@@ -25,8 +25,8 @@ function Block-Email
     .PARAMETER EmlFileName
         A string representing the eml file to parse.
 
-	.PARAMETER EmlFolder
-		A folder containing multiple eml files to parse.
+    .PARAMETER EmlFolder
+        A folder containing multiple eml files to parse.
 
     .EXAMPLE
         PS C:\> Block-Email -EmlFileName 'C:\Test\test.eml'
@@ -39,55 +39,56 @@ function Block-Email
     (
         [string]
         $EmlFileName,
-		
-		[string]
-		$EmlFolder
+        
+        [string]
+        $EmlFolder,
+        
+        [switch]
+        $SkipDomain
     )
-	
-	function ConvertEmlAndBlock($FilePath)
-	{
-		# Convert the EML file to a format we can parse.
-		$ConvertedEML = Convert-EmlFile -EmlFileName $FilePath
+    
+    function ConvertEmlAndBlock($FilePath)
+    {
+        # Convert the EML file to a format we can parse.
+        $ConvertedEML = Convert-EmlFile -EmlFileName $FilePath
 
-		# Grab the From property from the converted file.
-		$From = Select-Object -InputObject $ConvertedEML -Property From
+        # Grab the From property from the converted file.
+        $From = Select-Object -InputObject $ConvertedEML -Property From
 
-		# Run regex.
-		if($From -match '\<([^\<]*)\>')
-		{
-			# Save the first result to a variable.
-			$fromText = $Matches[1]
+        # Run regex.
+        if($From -match '\<([^\<]*)\>')
+        {
+            # Save the first result to a variable.
+            $fromText = $Matches[1]
 
-			Write-Host Email Address is $fromText.
+            Write-Host Email Address is $fromText.
 
-			# Block the sender in Office 365
-			Add-BlockedSender -SenderAddress $fromText
+            # Block the sender in Office 365
+            Add-BlockedSender -SenderAddress $fromText
 
-			Write-Host Blocked $fromText.
-			
-			# Check what the sender domain is, and ask if the user wants to block it if it's not from email providers such as gmail.
-			$SenderDomain = $fromText.Split('@')[1]
-			
-			Write-Host $($KnownProviders -contains $SenderDomain)
-			
-			if(-not ($KnownProviders -contains $SenderDomain))
-			{
-				$Confirmation = Read-Host "Email domain $SenderDomain is not in known common email provider list, recommend blocking it if it's not recognized. Block? [y/N]"
-				
-				if($Confirmation -eq 'y')
-				{
-					Write-Host "Blocking $SenderDomain."
-					
-					Add-BlockedSender -SenderDomain $SenderDomain
-					
-					Write-Host "Blocked $SenderDomain."
-				}
-			}
+            Write-Host Blocked $fromText.
+            
+            # Check what the sender domain is, and ask if the user wants to block it if it's not from email providers such as gmail.
+            $SenderDomain = $fromText.Split('@')[1]
+            
+            if(-not ($KnownProviders -contains $SenderDomain) -and -not $SkipDomain)
+            {
+                $Confirmation = Read-Host "Email domain $SenderDomain is not in known common email provider list, recommend blocking it if it's not recognized. Block? [y/N]"
+                
+                if($Confirmation -eq 'y')
+                {
+                    Write-Host "Blocking $SenderDomain."
+                    
+                    Add-BlockedSender -SenderDomain $SenderDomain
+                    
+                    Write-Host "Blocked $SenderDomain."
+                }
+            }
 
-			# Remove the EML File so it's not grabbed next time.
-			Remove-Item $FilePath
-		}
-	}
+            # Remove the EML File so it's not grabbed next time.
+            Remove-Item $FilePath
+        }
+    }
 
     if([string]::IsNullOrEmpty($EmlFileName))
     {
@@ -96,17 +97,17 @@ function Block-Email
             $EmlFileName = $EMLSaveLocation
         }
     }
-	
-	if(![string]::IsNullOrEmpty($EmlFolder) -and [string]::IsNullOrEmpty($EmlFileName))
-	{
-		# We got a folder, loop through all the Eml files.
-		$EmlFiles = Get-ChildItem -Path $EmlFolder -Filter *.eml -File
-		
-		ForEach($EmlFile in $EmlFiles)
-		{
-			ConvertEmlAndBlock $EmlFile
-		}
-	}
+    
+    if(![string]::IsNullOrEmpty($EmlFolder) -and [string]::IsNullOrEmpty($EmlFileName))
+    {
+        # We got a folder, loop through all the Eml files.
+        $EmlFiles = Get-ChildItem -Path $EmlFolder -Filter *.eml -File
+        
+        ForEach($EmlFile in $EmlFiles)
+        {
+            ConvertEmlAndBlock $EmlFile
+        }
+    }
 
     if([string]::IsNullOrEmpty($EmlFileName))
     {

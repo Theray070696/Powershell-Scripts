@@ -107,6 +107,7 @@ function Block-Email
         {
             ConvertEmlAndBlock $EmlFile
         }
+        return
     }
 
     if([string]::IsNullOrEmpty($EmlFileName))

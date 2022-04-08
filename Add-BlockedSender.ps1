@@ -73,12 +73,6 @@ param(
 
         if($SkipRemainder -ne $True)
         {
-            # Get the BlockedSenders and BlockedSenderDomains values from 
-            # the Exchange Online Spam Policy and save them to variables for
-            # later use.
-            $FilterPolicy = (Get-HostedContentFilterPolicy -Identity $SpamPolicy)
-            $BlockedSenders = (($FilterPolicy | Select -ExpandProperty BlockedSenders).Sender | foreach{$_.Address})
-            $BlockedSenderDomains = ($FilterPolicy | Select -ExpandProperty BlockedSenderDomains).Domain
             # Set a variable for testing the sender addresses later.
             $EmailRegex = '^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})$'
         }
@@ -108,12 +102,15 @@ param(
         if($SkipRemainder -ne $True)
         {
             # Set the new BlockedSenders value.
-            if($BlockedSenders) {Set-HostedContentFilterPolicy -Identity $SpamPolicy -BlockedSenders $BlockedSenders}
+            if($BlockedSenders)
+			{
+				Set-HostedContentFilterPolicy -Identity $SpamPolicy -BlockedSenders @{Add=$BlockedSenders}
+			}
             # Set the new BlockedSenderDomains value.
             if($SenderDomain)
             {
                 $BlockedSenderDomains += $SenderDomain
-                Set-HostedContentFilterPolicy -Identity $SpamPolicy -BlockedSenderDomains $BlockedSenderDomains
+                Set-HostedContentFilterPolicy -Identity $SpamPolicy -BlockedSenderDomains @{Add=$BlockedSenderDomains}
             }
         }
     }

@@ -1,4 +1,4 @@
-﻿######################################################################################################################
+######################################################################################################################
 # Grabs an email address from an .eml file and blocks it in Office 365.
 # Requires Add-BlockedSender.ps1 and Convert-EML.ps1 from https://www.github.com/Theray070696/Powershell-Scripts
 # Written by Theray070696. My other scripts can be found at https://www.github.com/Theray070696/Powershell-Scripts
@@ -27,6 +27,9 @@ function Block-Email
 
     .PARAMETER EmlFolder
         A folder containing multiple eml files to parse.
+
+    .PARAMETER SkipDomain
+        If included, will not block domain, even if not in known providers list.
 
     .EXAMPLE
         PS C:\> Block-Email -EmlFileName 'C:\Test\test.eml'
@@ -62,6 +65,36 @@ function Block-Email
             $fromText = $Matches[1]
 
             Write-Host Email Address is $fromText.
+        
+            # Loop through every field in the converted EML file
+            ForEach($Property in $ConvertedEML.Fields)
+            {
+                # Look for received-spf field
+                if($Property.Name -eq 'urn:schemas:mailheader:received-spf') 
+                {
+                    # Check if SPF has failed or softfailed. If it has, the from field has likely been spoofed
+                    if($Property.Value.ToLower().Contains('fail') -or $Property.Value.ToLower().Contains('softfail')) # Yes the second is redundant, but it makes me feel better
+                    {
+                        # It failed or softfailed, inform user of risk and ask if we should continue
+                        $ConfirmationSpoof = Read-Host 'Sender has been spoofed! Continuing may block a legitimate user in your organization! Do you wish to continue? [y/N]'
+                        
+                        if($ConfirmationSpoof.ToLower() -ne 'y')
+                        {
+                            # User does not want to continue, ask if we should delete the EML file
+                            $ConfirmationDelete = Read-Host 'Aborting, should we delete the EML file? [y/N]'
+                            
+                            if($ConfirmationDelete.ToLower() -eq 'y')
+                            {
+                                # Remove the EML File so it's not grabbed next time.
+                                Remove-Item $FilePath
+                            }
+                            
+                            # Exit this function
+                            return
+                        }
+                    }
+                }
+            }
 
             # Block the sender in Office 365
             Add-BlockedSender -SenderAddress $fromText
@@ -73,9 +106,9 @@ function Block-Email
             
             if(-not ($KnownProviders -contains $SenderDomain) -and -not $SkipDomain)
             {
-                $Confirmation = Read-Host "Email domain $SenderDomain is not in known common email provider list, recommend blocking it if it's not recognized. Block? [y/N]"
+                $ConfirmationDomain = Read-Host "Email domain $SenderDomain is not in known common email provider list, recommend blocking it if it's not recognized. Block? [y/N]"
                 
-                if($Confirmation -eq 'y')
+                if($ConfirmationDomain.ToLower() -eq 'y')
                 {
                     Write-Host "Blocking $SenderDomain."
                     

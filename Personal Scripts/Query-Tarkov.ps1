@@ -1,5 +1,6 @@
 ######################################################################################################################
 # Queries tarkov.dev API to check if a given item is needed for a task or hideout upgrade.
+# Also outputs the best vendor to sell the item to, and it's price.
 # Should be faster than using the web page, as no images are transferred.
 # Written by Theray070696. My other scripts can be found at https://www.github.com/Theray070696/Powershell-Scripts
 ######################################################################################################################
@@ -57,11 +58,15 @@ Function Check-VendorPrice($ItemResponseObject)
 
     if($HighestPrice -gt 0)
     {
+        $SellPrice = $HighestPrice
         Write-Verbose "$Seller for $HighestPrice"
-        return "$Seller for $HighestPrice"
+        return [PSCustomObject] @{
+            Vendor = $Seller
+            Price = $HighestPrice
+        }
     }
 
-    return ''
+    return $null
 }
 
 Write-Verbose 'Querying hideout data...'
@@ -102,7 +107,7 @@ while($true)
         return
     }
 
-    $ItemQuery = "{ `"query`": `"{ itemsByName(name: \`"$ItemNameInput\`") { name shortName id usedInTasks { name } sellFor { vendor { name } price } } }`" }"
+    $ItemQuery = "{ `"query`": `"{ itemsByName(name: \`"$ItemNameInput\`") { name shortName id width height usedInTasks { name } sellFor { vendor { name } price } } }`" }"
 
     Write-Verbose "Query: $ItemQuery"
 
@@ -140,11 +145,17 @@ while($true)
                 Write-Host "$ItemName is not used in any tasks"
             }
             
-            $SellsFor = Check-VendorPrice($ItemResponseObj)
+            $SellData = Check-VendorPrice($ItemResponseObj)
 
-            if(-not [string]::IsNullOrEmpty($SellsFor))
+            if($SellData -ne $Null)
             {
-                Write-Host "$ItemName sells best at $SellsFor"
+                Write-Host "$ItemName sells best at $($SellData.Vendor) for $($SellData.Price)"
+
+                Write-Verbose "Item size is width $($ItemResponseObj.data.itemsByName[0].width) height $($ItemResponseObj.data.itemsByName[0].height), total size $($ItemResponseObj.data.itemsByName[0].width * $ItemResponseObj.data.itemsByName[0].height) slots"
+
+                $TotalSlots = $ItemResponseObj.data.itemsByName[0].width * $ItemResponseObj.data.itemsByName[0].height
+
+                Write-Host "Value per slot is $($SellData.Price / $TotalSlots)"
             }
         } else
         {

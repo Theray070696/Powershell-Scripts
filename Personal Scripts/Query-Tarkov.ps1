@@ -17,8 +17,12 @@ Function Check-Hideout($Name)
 {
     $LowerName = $Name.ToLower()
     
+    $i = 0
     ForEach($Station in $HideoutResponseObj.data.hideoutStations)
     {
+        $i++
+        $PC = $($i / $HideoutResponseObj.data.hideoutStations.Length) * 100
+        Write-Progress -Activity 'Hideout Search' -Status 'Searching...' -PercentComplete $PC
         $StationName = $Station.name
         ForEach($Level in $Station.levels)
         {
@@ -34,6 +38,7 @@ Function Check-Hideout($Name)
             }
         }
     }
+    Write-Progress -Activity 'Hideout Search' -Completed
 }
 
 Function Check-VendorPrice($ItemResponseObject)

@@ -5,12 +5,12 @@
 
 [CMDLetBinding()]
 param(
-    [Parameter(Mandatory=$False, HelpMessage='The full or partial name of the group you want the members of.')]
-    [string]$GroupName,
     [Parameter(Mandatory=$True, HelpMessage='The path to the output CSV.')]
     [string]$Output,
-	[Parameter(Mandatory=$False, HelpMessage='If supplied, gets all groups and their members, outputting to the same CSV file.')]
-	[switch]$All
+    [Parameter(Mandatory=$False, HelpMessage='The full or partial name of the group you want the members of.')]
+    [string]$GroupName,
+    [Parameter(Mandatory=$False, HelpMessage='If supplied, gets all groups and their members, outputting to the same CSV file.')]
+    [switch]$All
 )
 
 If($PSVersionTable.PSVersion.Major -eq 7)
@@ -21,10 +21,10 @@ If($PSVersionTable.PSVersion.Major -eq 7)
     return
 } Else
 {
-    If(-Not (Get-Command Get-AzureADGroup -ea SilentlyContinue))
+    If([Microsoft.Open.Azure.AD.CommonLibrary.AzureSession]::AccessTokens -eq $null -or [Microsoft.Open.Azure.AD.CommonLibrary.AzureSession]::AccessTokens.Count -eq 0)
     {
         Write-Warning "This function requires a connection to AzureAD. Prompting Now."
-	  
+      
         If(-Not (Get-Command Connect-AzureAD -ea SilentlyContinue))
         {
             Write-Error "Could not find command to connect to AzureAD."
@@ -35,10 +35,10 @@ If($PSVersionTable.PSVersion.Major -eq 7)
         } Else
         {
             Connect-AzureAD
-		
-            If(-not (Get-Command Get-AzureADGroup -ea SilentlyContinue))
+        
+            If([Microsoft.Open.Azure.AD.CommonLibrary.AzureSession]::AccessTokens -eq $null -or [Microsoft.Open.Azure.AD.CommonLibrary.AzureSession]::AccessTokens.Count -eq 0)
             {
-  	            Write-Warning "Could not connect to AzureAD. Verify credentials and try again later."
+                Write-Warning "Could not connect to AzureAD. Verify credentials and try again later."
                 $SkipRemainder = $True
                 
                 return
@@ -51,7 +51,7 @@ $MemberCollection = New-Object System.Collections.Generic.List[System.Object]
 
 if($All)
 {
-    $Groups = Get-AzureADGroup
+    $Groups = Get-AzureADGroup -All:$True
 } elseif(-not [string]::IsNullOrEmpty($GroupName))
 {
     $Groups = Get-AzureADGroup -SearchString $GroupName
@@ -71,6 +71,12 @@ ForEach($Group in $Groups)
     {
         $Mem = New-Object PSObject
         $Mem | Add-Member NoteProperty GroupName($Group.DisplayName)
+        
+        if($Group.MailEnabled)
+        {
+            $Mem | Add-Member NoteProperty GroupAddress($Group.Mail)
+        }
+        
         $Mem | Add-Member NoteProperty DisplayName($Member.DisplayName)
         $Mem | Add-Member NoteProperty UserPrincipalName($Member.UserPrincipalName)
         $Mem | Add-Member NoteProperty UserType($Member.UserType)

@@ -64,7 +64,7 @@ function Block-Email
             # Save the first result to a variable.
             $fromText = $Matches[1]
 
-            Write-Host Email Address is $fromText.
+            Write-Host "Email Address is $fromText."
         
             # Loop through every field in the converted EML file
             ForEach($Property in $ConvertedEML.Fields)
@@ -99,7 +99,7 @@ function Block-Email
             # Block the sender in Office 365
             Add-BlockedSender -SenderAddress $fromText
 
-            Write-Host Blocked $fromText.
+            Write-Host "Blocked $fromText."
             
             # Check what the sender domain is, and ask if the user wants to block it if it's not from email providers such as gmail.
             $SenderDomain = $fromText.Split('@')[1]

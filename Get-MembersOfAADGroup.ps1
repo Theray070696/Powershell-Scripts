@@ -16,8 +16,6 @@ param(
 If($PSVersionTable.PSVersion.Major -eq 7)
 {
     Write-Error "This script is incompatible with PowerShell 7, and is only verified to work currently on PowerShell 5."
-    $SkipRemainder = $True
-    
     return
 } Else
 {
@@ -29,8 +27,6 @@ If($PSVersionTable.PSVersion.Major -eq 7)
         {
             Write-Error "Could not find command to connect to AzureAD."
             Write-Error "Please run Install-Module -Name AzureAD in an administrator PowerShell window to install the required module."
-            $SkipRemainder = $True
-            
             return
         } Else
         {
@@ -39,8 +35,6 @@ If($PSVersionTable.PSVersion.Major -eq 7)
             If([Microsoft.Open.Azure.AD.CommonLibrary.AzureSession]::AccessTokens -eq $null -or [Microsoft.Open.Azure.AD.CommonLibrary.AzureSession]::AccessTokens.Count -eq 0)
             {
                 Write-Warning "Could not connect to AzureAD. Verify credentials and try again later."
-                $SkipRemainder = $True
-                
                 return
             }
         }

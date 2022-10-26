@@ -3,16 +3,32 @@
 # Written by Theray070696. My other scripts can be found at https://www.github.com/Theray070696/Powershell-Scripts
 ######################################################################################################################
 
-Import-Module AzureAD
-
-try
+If($PSVersionTable.PSVersion.Major -eq 7)
 {
-    Get-AzureADDomain -ErrorAction Stop > $null
-}
-catch 
+    Write-Error "This script is incompatible with PowerShell 7, and is only verified to work currently on PowerShell 5."
+    return
+} Else
 {
-    Write-Host 'Connecting to Office 365...'
-    Connect-AzureAD
+    If([Microsoft.Open.Azure.AD.CommonLibrary.AzureSession]::AccessTokens -eq $null -or [Microsoft.Open.Azure.AD.CommonLibrary.AzureSession]::AccessTokens.Count -eq 0)
+    {
+        Write-Warning "This function requires a connection to AzureAD. Prompting Now."
+      
+        If(-Not (Get-Command Connect-AzureAD -ea SilentlyContinue))
+        {
+            Write-Error "Could not find command to connect to AzureAD."
+            Write-Error "Please run Install-Module -Name AzureAD in an administrator PowerShell window to install the required module."
+            return
+        } Else
+        {
+            Connect-AzureAD
+        
+            If([Microsoft.Open.Azure.AD.CommonLibrary.AzureSession]::AccessTokens -eq $null -or [Microsoft.Open.Azure.AD.CommonLibrary.AzureSession]::AccessTokens.Count -eq 0)
+            {
+                Write-Warning "Could not connect to AzureAD. Verify credentials and try again later."
+                return
+            }
+        }
+    }
 }
 
 Write-Host 'Getting licenses...'

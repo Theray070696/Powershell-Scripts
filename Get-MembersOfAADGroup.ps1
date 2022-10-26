@@ -22,6 +22,8 @@ If($PSVersionTable.PSVersion.Major -eq 7)
     If([Microsoft.Open.Azure.AD.CommonLibrary.AzureSession]::AccessTokens -eq $null -or [Microsoft.Open.Azure.AD.CommonLibrary.AzureSession]::AccessTokens.Count -eq 0)
     {
         Write-Warning "This function requires a connection to AzureAD. Prompting Now."
+        
+        Import-Module AzureAD
       
         If(-Not (Get-Command Connect-AzureAD -ea SilentlyContinue))
         {

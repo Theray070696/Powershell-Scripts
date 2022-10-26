@@ -3,6 +3,8 @@
 # Written by Theray070696. My other scripts can be found at https://www.github.com/Theray070696/Powershell-Scripts
 ######################################################################################################################
 
+Import-Module AzureAD
+
 try
 {
     Get-AzureADDomain -ErrorAction Stop > $null

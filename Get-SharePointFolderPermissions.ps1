@@ -26,7 +26,7 @@ $PermissionCollection = New-Object System.Collections.Generic.List[System.Object
 # Might not be a bad idea to move these to parameters. I'll do it later.
 $SiteURL="https://$Domain.sharepoint.com/"
 
-# The following function if slightly modified from the one that can be found at https://www.sharepointdiary.com/2018/03/sharepoint-online-powershell-to-get-folder-permissions.html
+# The following function is slightly modified from the one that can be found at https://www.sharepointdiary.com/2018/03/sharepoint-online-powershell-to-get-folder-permissions.html
 #Function to Get Permissions Applied on a particular Object such as: Web, List, Library, Folder or List Item
 Function Get-PnPPermissions([Microsoft.SharePoint.Client.SecurableObject]$Object, $FolderName)
 {
@@ -117,7 +117,7 @@ Function Get-PnPPermissions([Microsoft.SharePoint.Client.SecurableObject]$Object
     Write-Verbose "Current PermissionCollection count: $($PermissionCollection.Count)"
 }
 
-# The following function if slightly modified from the one that can be found at https://www.c-sharpcorner.com/blogs/how-to-get-all-the-folders-and-subfolders-from-sharepoint-online-document-library-using-pnp-powershell
+# The following function is slightly modified from the one that can be found at https://www.c-sharpcorner.com/blogs/how-to-get-all-the-folders-and-subfolders-from-sharepoint-online-document-library-using-pnp-powershell
 # Loop through to get all the folders and subfolders and get permissions for each folder
 Function Get-FolderPermissions($rootFolderUrl, $CurrentDepth)
 {

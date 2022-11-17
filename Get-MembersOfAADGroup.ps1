@@ -19,26 +19,25 @@ If($PSVersionTable.PSVersion.Major -eq 7)
     return
 } Else
 {
+    Import-Module AzureAD
+    
+    If(-Not (Get-Command Connect-AzureAD -ea SilentlyContinue))
+    {
+        Write-Error "Could not find command to connect to AzureAD."
+        Write-Error "Please run Install-Module -Name AzureAD in an administrator PowerShell window to install the required module."
+        return
+    }
+    
     If([Microsoft.Open.Azure.AD.CommonLibrary.AzureSession]::AccessTokens -eq $null -or [Microsoft.Open.Azure.AD.CommonLibrary.AzureSession]::AccessTokens.Count -eq 0)
     {
         Write-Warning "This function requires a connection to AzureAD. Prompting Now."
         
-        Import-Module AzureAD
-      
-        If(-Not (Get-Command Connect-AzureAD -ea SilentlyContinue))
+        Connect-AzureAD
+    
+        If([Microsoft.Open.Azure.AD.CommonLibrary.AzureSession]::AccessTokens -eq $null -or [Microsoft.Open.Azure.AD.CommonLibrary.AzureSession]::AccessTokens.Count -eq 0)
         {
-            Write-Error "Could not find command to connect to AzureAD."
-            Write-Error "Please run Install-Module -Name AzureAD in an administrator PowerShell window to install the required module."
+            Write-Warning "Could not connect to AzureAD. Verify credentials and try again later."
             return
-        } Else
-        {
-            Connect-AzureAD
-        
-            If([Microsoft.Open.Azure.AD.CommonLibrary.AzureSession]::AccessTokens -eq $null -or [Microsoft.Open.Azure.AD.CommonLibrary.AzureSession]::AccessTokens.Count -eq 0)
-            {
-                Write-Warning "Could not connect to AzureAD. Verify credentials and try again later."
-                return
-            }
         }
     }
 }

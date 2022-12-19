@@ -74,7 +74,7 @@ param(
         if($SkipRemainder -ne $True)
         {
             # Set a variable for testing the sender addresses later.
-            $EmailRegex = '^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})$'
+            $EmailRegex = '^[=_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})$'
         }
     }
 

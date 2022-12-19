@@ -7,6 +7,9 @@
 # Set this to where you download .eml files to by default. Will only be checked if no parameter was passed.
 $EMLSaveLocation = ""
 
+# Set to your domain to help with detection of spoofed senders
+$InternalDomain = ""
+
 # This list contains known mass-hosting domains. Modify this to include any domains you never want to block the domain of. The script will always ask before blocking a domain.
 $KnownProviders = @('gmail.com', 'outlook.com', 'hotmail.com', 'pm.me', 'protonmail.com', 'aol.com', 'yahoo.com', 'icloud.com', 'msn.com', 'comcast.net', 'cox.net', 'att.net', 'charter.net', 'mail.com', 'frontiernet.net', 'mac.com')
 
@@ -57,12 +60,47 @@ function Block-Email
 
         # Grab the From property from the converted file.
         $From = Select-Object -InputObject $ConvertedEML -Property From
+        
+        $Contin = $True
 
         # Run regex.
         if($From -match '\<([^\<]*)\>')
         {
             # Save the first result to a variable.
             $fromText = $Matches[1]
+            
+            # Check what the sender domain is, and ask if the user wants to block it if it's not from email providers such as gmail.
+            $SenderDomain = $fromText.Split('@')[1]
+            $SenderDomain = $SenderDomain.ToLower()
+            
+            # Sender domain is spoofed, check if Sender property has true sender
+            if($SenderDomain -eq $InternalDomain)
+            {
+                $NewFrom = Select-Object -InputObject $ConvertedEML -Property Sender
+                
+                if(-not [string]::IsNullOrEmpty($NewFrom))
+                {
+                    if($NewFrom -match '\<([^\<]*)\>')
+                    {
+                        $newFromText = $Matches[1]
+                        
+                        $NewSenderDomain = $newFromText.Split('@')[1]
+                        $NewSenderDomain = $NewSenderDomain.ToLower()
+                        
+                        if($NewSenderDomain -ne $SenderDomain)
+                        {
+                            Write-Host "From field was spoofed, found sender in Sender field. Pay attention when blocking!"
+                            Write-Host "From field was $fromText, Sender field was $newFromText"
+                            $From = $NewFrom
+                            $fromText = $newFromText
+                            $SenderDomain = $NewSenderDomain
+                        }
+                    }
+                } else
+                {
+                    Write-Host "Sender domain matches internal domain! Sender is either spoofed or compromised!"
+                }
+            }
 
             Write-Host "Email Address is $fromText."
         
@@ -70,10 +108,13 @@ function Block-Email
             ForEach($Property in $ConvertedEML.Fields)
             {
                 # Look for received-spf field
-                if($Property.Name -eq 'urn:schemas:mailheader:received-spf') 
+                if($Property.Name -eq 'urn:schemas:mailheader:received-spf' -and $Contin) 
                 {
+                    # Convert to lowercase to make life easier
+                    $LowerValue = $Property.Value.ToLower()
+                    
                     # Check if SPF has failed or softfailed. If it has, the from field has likely been spoofed
-                    if($Property.Value.ToLower().Contains('fail') -or $Property.Value.ToLower().Contains('softfail')) # Yes the second is redundant, but it makes me feel better
+                    if($LowerValue.Contains('fail') -or $LowerValue.Contains('softfail')) # Yes the second is redundant, but it makes me feel better
                     {
                         # It failed or softfailed, inform user of risk and ask if we should continue
                         $ConfirmationSpoof = Read-Host 'Sender has been spoofed! Continuing may block a legitimate user in your organization! Do you wish to continue? [y/N]'
@@ -92,6 +133,36 @@ function Block-Email
                             # Exit this function
                             return
                         }
+                        
+                        $Contin = $False
+                    }
+                } elseif($Property.Name -eq 'urn:schemas:mailheader:authentication-results' -and $Contin)
+                {
+                    # Convert to lowercase to make life easier
+                    $LowerValue = $Property.Value.ToLower()
+                    
+                    # Check if SPF, DKIM or DMARC has failed or softfailed. If it has, the from field has likely been spoofed
+                    if($LowerValue.Contains('spf=fail') -or $LowerValue.Contains('spf=softfail') -or $LowerValue.Contains('dkim=fail') -or $LowerValue.Contains('dmarc=fail') -or $LowerValue.Contains('compauth=fail'))
+                    {
+                        # It failed or softfailed, inform user of risk and ask if we should continue
+                        $ConfirmationSpoof = Read-Host 'Sender has been spoofed! Continuing may block a legitimate user in your organization! Do you wish to continue? [y/N]'
+                        
+                        if($ConfirmationSpoof.ToLower() -ne 'y')
+                        {
+                            # User does not want to continue, ask if we should delete the EML file
+                            $ConfirmationDelete = Read-Host 'Aborting, should we delete the EML file? [y/N]'
+                            
+                            if($ConfirmationDelete.ToLower() -eq 'y')
+                            {
+                                # Remove the EML File so it's not grabbed next time.
+                                Remove-Item $FilePath
+                            }
+                            
+                            # Exit this function
+                            return
+                        }
+                        
+                        $Contin = $False
                     }
                 }
             }
@@ -100,9 +171,6 @@ function Block-Email
             Add-BlockedSender -SenderAddress $fromText
 
             Write-Host "Blocked $fromText."
-            
-            # Check what the sender domain is, and ask if the user wants to block it if it's not from email providers such as gmail.
-            $SenderDomain = $fromText.Split('@')[1]
             
             if(-not ($KnownProviders -contains $SenderDomain) -and -not $SkipDomain)
             {

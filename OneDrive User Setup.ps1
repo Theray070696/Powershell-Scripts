@@ -1,5 +1,5 @@
 ######################################################################################################################
-# Syncs down specifies sites from SharePoint.
+# Syncs down specified sites from SharePoint.
 # Written by Theray070696. My other scripts can be found at https://www.github.com/Theray070696/Powershell-Scripts
 ######################################################################################################################
 

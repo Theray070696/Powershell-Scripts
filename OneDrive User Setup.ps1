@@ -1,3 +1,8 @@
+######################################################################################################################
+# Syncs down specifies sites from SharePoint.
+# Written by Theray070696. My other scripts can be found at https://www.github.com/Theray070696/Powershell-Scripts
+######################################################################################################################
+
 param(
     [switch]$Silent
 )
@@ -175,7 +180,7 @@ if(-not $Silent)
 
 # Copy from HERE
 
-# These values must be filled in. How you find each is here: https://learn.microsoft.com/en-us/sharepoint/deploy-on-windows OR start a manual sync, cancel it, the click Copy Library ID. This gets you everything except the List ID. List ID need curly braces in URL form surrounding it, IE { = %7B and } = %7D
+# These values must be filled in. How you find each is here: https://learn.microsoft.com/en-us/sharepoint/deploy-on-windows OR start a manual sync, cancel it, the click Copy Library ID. This gets you everything you need.
 $siteid = "" # https://<TenantName>.sharepoint.com/sites/<SiteName>/_api/site/id
 $webid = "" # https://<TenantName>.sharepoint.com/sites/<SiteName>/_api/web/id
 $listid = "" # https://<tenant>.sharepoint.com/sites/<SiteName>/_layouts/15/listedit.aspx?List=%7Bxxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx%7D

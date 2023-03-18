@@ -142,7 +142,7 @@ $UPN = whoami /upn
 
 if(-not (Test-Path "HKCU:\SOFTWARE\Microsoft\OneDrive\Accounts\Business1\UserEmail")) # This regsitry key is blank when not signed into OneDrive
 {
-    DisplayGUI
+    DisplaySignInGUI
 }
 
 if(-not $Silent)

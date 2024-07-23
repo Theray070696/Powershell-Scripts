@@ -11,8 +11,8 @@ param
     [string] $Path,
     [switch] $Recurse,
     [switch] $AutoDelete, # Note, I'd recommand leaving this off and manually checking the files so you're not left with a file that had a broken encode and no original. I haven't had this happen yet, but I'm not responsible for any loss caused by this switch.
-	[switch] $AV1,
-	[switch] $HEVC
+    [switch] $AV1,
+    [switch] $HEVC
 )
 
 $Version = 1.1.3
@@ -34,80 +34,80 @@ function CompleteNotification
 
 function Compress-File($File)
 {
-	if($HEVC)
-	{
-		if($File.Name.EndsWith('_HEVC.mp4') -or $File.Name.EndsWith('_AV1.mp4'))
-		{
-			Write-Host $File.Name is already compressed
-			return
-		}
-		
-		if($PSCmdlet.MyInvocation.BoundParameters["Verbose"].IsPresent)
-		{
-			ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v hevc_nvenc -rc constqp -qp 20 -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_CRF20_HEVC.mp4"
-		} else
-		{
-			ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v hevc_nvenc -rc constqp -qp 20 -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_CRF20_HEVC.mp4" -hide_banner -loglevel error -stats
-		}
+    if($HEVC)
+    {
+        if($File.Name.EndsWith('_HEVC.mp4') -or $File.Name.EndsWith('_AV1.mp4'))
+        {
+            Write-Host $File.Name is already compressed
+            return
+        }
+        
+        if($PSCmdlet.MyInvocation.BoundParameters["Verbose"].IsPresent)
+        {
+            ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v hevc_nvenc -rc constqp -qp 20 -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_CRF20_HEVC.mp4"
+        } else
+        {
+            ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v hevc_nvenc -rc constqp -qp 20 -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_CRF20_HEVC.mp4" -hide_banner -loglevel error -stats
+        }
 
-		if($AutoDelete -and $LastExitCode -eq 0)
-		{
-			$NewFile = Get-Item -Path "$($File.Directory)\$($File.BaseName)_CRF20_HEVC.mp4"
+        if($AutoDelete -and $LastExitCode -eq 0)
+        {
+            $NewFile = Get-Item -Path "$($File.Directory)\$($File.BaseName)_CRF20_HEVC.mp4"
 
-			if(Test-Path "$($File.Directory)\$($File.BaseName)_CRF20_HEVC.mp4")
-			{
-				if($NewFile.Length -gt $File.Length)
-				{
-					Write-Host Original file is smaller
-					$NewFile | Remove-Item
-					Move-Item -Path $File.FullName -Destination "$($File.Directory)\$($File.BaseName)_CRF20_HEVC.mp4"
-				} elseif($File.Length -gt $NewFile.Length)
-				{
-					Write-Host Compressed file is smaller
-					$File | Remove-Item
-				}
-			}
-		}
-	} elseif($AV1)
-	{
-		if($File.Name.EndsWith('_AV1.mp4'))
-		{
-			Write-Host $File.Name is already compressed
-			return
-		}
-		
-		Write-Host "AV1 Encoding is in very early testing. So early that it's not even implemented. Will update as I get GPUs."
-		return
-		
-		# Below is copied from HEVC code. There is no AV1 compression in this script yet
-		
-		if($PSCmdlet.MyInvocation.BoundParameters["Verbose"].IsPresent)
-		{
-			ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v hevc_nvenc -rc constqp -qp 20 -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_CRF20_AV1.mp4"
-		} else
-		{
-			ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v hevc_nvenc -rc constqp -qp 20 -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_CRF20_AV1.mp4" -hide_banner -loglevel error -stats
-		}
+            if(Test-Path "$($File.Directory)\$($File.BaseName)_CRF20_HEVC.mp4")
+            {
+                if($NewFile.Length -gt $File.Length)
+                {
+                    Write-Host Original file is smaller
+                    $NewFile | Remove-Item
+                    Move-Item -Path $File.FullName -Destination "$($File.Directory)\$($File.BaseName)_CRF20_HEVC.mp4"
+                } elseif($File.Length -gt $NewFile.Length)
+                {
+                    Write-Host Compressed file is smaller
+                    $File | Remove-Item
+                }
+            }
+        }
+    } elseif($AV1)
+    {
+        if($File.Name.EndsWith('_AV1.mp4'))
+        {
+            Write-Host $File.Name is already compressed
+            return
+        }
+        
+        Write-Host "AV1 Encoding is in very early testing. So early that it's not even implemented. Will update as I get GPUs."
+        return
+        
+        # Below is copied from HEVC code. There is no AV1 compression in this script yet
+        
+        if($PSCmdlet.MyInvocation.BoundParameters["Verbose"].IsPresent)
+        {
+            ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v hevc_nvenc -rc constqp -qp 20 -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_CRF20_AV1.mp4"
+        } else
+        {
+            ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v hevc_nvenc -rc constqp -qp 20 -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_CRF20_AV1.mp4" -hide_banner -loglevel error -stats
+        }
 
-		if($AutoDelete -and $LastExitCode -eq 0)
-		{
-			$NewFile = Get-Item -Path "$($File.Directory)\$($File.BaseName)_CRF20_AV1.mp4"
+        if($AutoDelete -and $LastExitCode -eq 0)
+        {
+            $NewFile = Get-Item -Path "$($File.Directory)\$($File.BaseName)_CRF20_AV1.mp4"
 
-			if(Test-Path "$($File.Directory)\$($File.BaseName)_CRF20_AV1.mp4")
-			{
-				if($NewFile.Length -gt $File.Length)
-				{
-					Write-Host Original file is smaller
-					$NewFile | Remove-Item
-					Move-Item -Path $File.FullName -Destination "$($File.Directory)\$($File.BaseName)_CRF20_AV1.mp4"
-				} elseif($File.Length -gt $NewFile.Length)
-				{
-					Write-Host Compressed file is smaller
-					$File | Remove-Item
-				}
-			}
-		}
-	}
+            if(Test-Path "$($File.Directory)\$($File.BaseName)_CRF20_AV1.mp4")
+            {
+                if($NewFile.Length -gt $File.Length)
+                {
+                    Write-Host Original file is smaller
+                    $NewFile | Remove-Item
+                    Move-Item -Path $File.FullName -Destination "$($File.Directory)\$($File.BaseName)_CRF20_AV1.mp4"
+                } elseif($File.Length -gt $NewFile.Length)
+                {
+                    Write-Host Compressed file is smaller
+                    $File | Remove-Item
+                }
+            }
+        }
+    }
 }
 
 function Compress-Folder([string]$Folder)

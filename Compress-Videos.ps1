@@ -2,7 +2,7 @@
 # Uses GPU accelerated HEVC compression to reduce file size without visibly effecting quality.
 # FFMPEG commands come from EposVox, who wrote a .bat version I based this script on.
 # Only works on Nvidia GPUs with a hardware encoder (99% of GTX/RTX cards have one).
-# Written by Theray070696. My other scripts can be found at https://www.github.com/Theray070696/Powershell-Scripts
+# Written by RantingRaymond. My other scripts can be found at https://www.github.com/Theray070696/Powershell-Scripts
 ######################################################################################################################
 
 [CmdletBinding()]
@@ -10,10 +10,12 @@ param
 (
     [string] $Path,
     [switch] $Recurse,
-    [switch] $AutoDelete # Note, I'd recommand leaving this off and manually checking the files so you're not left with a file that had a broken encode and no original. I haven't had this happen yet, but I'm not responsible for any loss caused by this switch.
+    [switch] $AutoDelete, # Note, I'd recommand leaving this off and manually checking the files so you're not left with a file that had a broken encode and no original. I haven't had this happen yet, but I'm not responsible for any loss caused by this switch.
+	[switch] $AV1,
+	[switch] $HEVC
 )
 
-$Version = 1.1.2
+$Version = 1.1.3
 
 function CompleteNotification
 {
@@ -32,32 +34,80 @@ function CompleteNotification
 
 function Compress-File($File)
 {
-    if($PSCmdlet.MyInvocation.BoundParameters["Verbose"].IsPresent)
-    {
-        ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v hevc_nvenc -rc constqp -qp 24 -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_CRF24_HEVC.mp4"
-    } else
-    {
-        ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v hevc_nvenc -rc constqp -qp 24 -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_CRF24_HEVC.mp4" -hide_banner -loglevel error -stats
-    }
+	if($HEVC)
+	{
+		if($File.Name.EndsWith('_HEVC.mp4') -or $File.Name.EndsWith('_AV1.mp4'))
+		{
+			Write-Host $File.Name is already compressed
+			return
+		}
+		
+		if($PSCmdlet.MyInvocation.BoundParameters["Verbose"].IsPresent)
+		{
+			ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v hevc_nvenc -rc constqp -qp 20 -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_CRF20_HEVC.mp4"
+		} else
+		{
+			ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v hevc_nvenc -rc constqp -qp 20 -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_CRF20_HEVC.mp4" -hide_banner -loglevel error -stats
+		}
 
-    if($AutoDelete -and $LastExitCode -eq 0)
-    {
-        $NewFile = Get-Item -Path "$($File.Directory)\$($File.BaseName)_CRF24_HEVC.mp4"
+		if($AutoDelete -and $LastExitCode -eq 0)
+		{
+			$NewFile = Get-Item -Path "$($File.Directory)\$($File.BaseName)_CRF20_HEVC.mp4"
 
-        if(Test-Path "$($File.Directory)\$($File.BaseName)_CRF24_HEVC.mp4")
-        {
-            if($NewFile.Length -gt $File.Length)
-            {
-                Write-Host Original file is smaller
-                $NewFile | Remove-Item
-                Move-Item -Path $File.FullName -Destination "$($File.Directory)\$($File.BaseName)_CRF24_HEVC.mp4"
-            } elseif($File.Length -gt $NewFile.Length)
-            {
-                Write-Host Compressed file is smaller
-                $File | Remove-Item
-            }
-        }
-    }
+			if(Test-Path "$($File.Directory)\$($File.BaseName)_CRF20_HEVC.mp4")
+			{
+				if($NewFile.Length -gt $File.Length)
+				{
+					Write-Host Original file is smaller
+					$NewFile | Remove-Item
+					Move-Item -Path $File.FullName -Destination "$($File.Directory)\$($File.BaseName)_CRF20_HEVC.mp4"
+				} elseif($File.Length -gt $NewFile.Length)
+				{
+					Write-Host Compressed file is smaller
+					$File | Remove-Item
+				}
+			}
+		}
+	} elseif($AV1)
+	{
+		if($File.Name.EndsWith('_AV1.mp4'))
+		{
+			Write-Host $File.Name is already compressed
+			return
+		}
+		
+		Write-Host "AV1 Encoding is in very early testing. So early that it's not even implemented. Will update as I get GPUs."
+		return
+		
+		# Below is copied from HEVC code. There is no AV1 compression in this script yet
+		
+		if($PSCmdlet.MyInvocation.BoundParameters["Verbose"].IsPresent)
+		{
+			ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v hevc_nvenc -rc constqp -qp 20 -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_CRF20_AV1.mp4"
+		} else
+		{
+			ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v hevc_nvenc -rc constqp -qp 20 -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_CRF20_AV1.mp4" -hide_banner -loglevel error -stats
+		}
+
+		if($AutoDelete -and $LastExitCode -eq 0)
+		{
+			$NewFile = Get-Item -Path "$($File.Directory)\$($File.BaseName)_CRF20_AV1.mp4"
+
+			if(Test-Path "$($File.Directory)\$($File.BaseName)_CRF20_AV1.mp4")
+			{
+				if($NewFile.Length -gt $File.Length)
+				{
+					Write-Host Original file is smaller
+					$NewFile | Remove-Item
+					Move-Item -Path $File.FullName -Destination "$($File.Directory)\$($File.BaseName)_CRF20_AV1.mp4"
+				} elseif($File.Length -gt $NewFile.Length)
+				{
+					Write-Host Compressed file is smaller
+					$File | Remove-Item
+				}
+			}
+		}
+	}
 }
 
 function Compress-Folder([string]$Folder)
@@ -70,11 +120,11 @@ function Compress-Folder([string]$Folder)
         {
             Write-Host Compressing directory $Item.FullName
             Compress-Folder $Item.FullName
-        } elseif($Item.Extension -eq '.MP4' -and -not $Item.Name.EndsWith('_CRF24_HEVC.mp4'))
+        } elseif($Item.Extension -eq '.MP4' -or $Item.Extension -eq '.MKV' -or $Item.Extension -eq '.MOV' -or $Item.Extension -eq '.WMV')
         {
             Write-Host Compressing $Item.Name
             Compress-File $Item
-        } elseif($Item.Name.EndsWith('_CRF24_HEVC.mp4'))
+        } elseif($Item.Name.EndsWith('_HEVC.mp4'))
         {
             Write-Host $Item.Name is already compressed
         }
@@ -111,7 +161,7 @@ if($MyInvocation.InvocationName -ne '.' -and $MyInvocation.InvocationName -ne 'I
         Compress-Folder $Target.FullName
 
         CompleteNotification
-    } elseif($Target.Extension -eq '.MP4' -and -not $Target.Name.EndsWith('_CRF24_HEVC.mp4'))
+    } elseif(($Target.Extension -eq '.MP4' -or $Target.Extension -eq '.MKV' -or $Target.Extension -eq '.MOV' -or $Target.Extension -eq '.WMV') -and -not $Target.Name.EndsWith('_HEVC.mp4'))
     {
         # This is a file
         Write-Host Compressing $Target.Name
@@ -119,7 +169,10 @@ if($MyInvocation.InvocationName -ne '.' -and $MyInvocation.InvocationName -ne 'I
         Compress-File $Target
 
         CompleteNotification
-    } elseif($Target.Name.EndsWith('_CRF24_HEVC.mp4'))
+    } elseif($HEVC -and ($Target.Name.EndsWith('_HEVC.mp4') -or $Target.Name.EndsWith('_AV1.mp4')))
+    {
+        Write-Host $Target.Name is already compressed
+    } elseif($AV1 -and $Target.Name.EndsWith('_AV1.mp4'))
     {
         Write-Host $Target.Name is already compressed
     }

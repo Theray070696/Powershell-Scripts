@@ -1,7 +1,6 @@
 #Requires -RunAsAdministrator
 
-# Wish I could use [System.Environment]::OSVersion.Version, but there's no documentation on what Windows 11 is vs Windows 10. Major version is the same between the two
-$OsName = (Get-ComputerInfo).OSName
+$OsName = (Get-WmiObject Win32_OperatingSystem).Caption
 
 # I know this is dirty, but meh. Made it easier in my head.
 $IsWin10 = $OSName.Contains("Windows 10")

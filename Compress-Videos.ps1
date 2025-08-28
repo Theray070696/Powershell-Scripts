@@ -1,7 +1,7 @@
 ######################################################################################################################
-# Uses GPU accelerated HEVC compression to reduce file size without visibly effecting quality.
+# Uses GPU accelerated HEVC/AV1 compression to reduce file size without visibly effecting quality.
 # FFMPEG commands come from EposVox, who wrote a .bat version I based this script on.
-# Only works on Nvidia GPUs with a hardware encoder (99% of GTX/RTX cards have one).
+# Only works on Nvidia GPUs with a hardware encoder (experimental support for Intel/AMD GPUs WiP).
 # Written by RantingRaymond. My other scripts can be found at https://www.github.com/Theray070696/Powershell-Scripts
 ######################################################################################################################
 
@@ -12,10 +12,12 @@ param
     [switch] $Recurse,
     [switch] $AutoDelete, # Note, I'd recommand leaving this off and manually checking the files so you're not left with a file that had a broken encode and no original. I haven't had this happen yet, but I'm not responsible for any loss caused by this switch.
     [switch] $AV1,
-    [switch] $HEVC
+    [switch] $HEVC,
+	[switch] $AMD,
+	[switch] $Intel
 )
 
-$Version = 1.1.3
+$Version = 1.2.0
 
 function CompleteNotification
 {
@@ -41,26 +43,41 @@ function Compress-File($File)
             Write-Host $File.Name is already compressed
             return
         }
+		
+		$Encoder = "hevc_"
+		
+		if($AMD)
+		{
+			$Encoder += "amf"
+		} elseif($Intel)
+		{
+			$Encoder += "qsv"
+		} else
+		{
+			$Encoder += "nvenc"
+		}
+		
+		$EncoderLevel = 20
         
         if($PSCmdlet.MyInvocation.BoundParameters["Verbose"].IsPresent)
         {
-            ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v hevc_nvenc -rc constqp -qp 20 -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_CRF20_HEVC.mp4"
+            ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v $Encoder -rc constqp -qp $EncoderLevel -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_QP$($EncoderLevel)_HEVC.mp4"
         } else
         {
-            ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v hevc_nvenc -rc constqp -qp 20 -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_CRF20_HEVC.mp4" -hide_banner -loglevel error -stats
+            ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v $Encoder -rc constqp -qp $EncoderLevel -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_QP$($EncoderLevel)_HEVC.mp4" -hide_banner -loglevel error -stats
         }
 
         if($AutoDelete -and $LastExitCode -eq 0)
         {
-            $NewFile = Get-Item -Path "$($File.Directory)\$($File.BaseName)_CRF20_HEVC.mp4"
+            $NewFile = Get-Item -Path "$($File.Directory)\$($File.BaseName)_QP$($EncoderLevel)_HEVC.mp4"
 
-            if(Test-Path "$($File.Directory)\$($File.BaseName)_CRF20_HEVC.mp4")
+            if(Test-Path "$($File.Directory)\$($File.BaseName)_QP$($EncoderLevel)_HEVC.mp4")
             {
                 if($NewFile.Length -gt $File.Length)
                 {
                     Write-Host Original file is smaller
                     $NewFile | Remove-Item
-                    Move-Item -Path $File.FullName -Destination "$($File.Directory)\$($File.BaseName)_CRF20_HEVC.mp4"
+                    Move-Item -Path $File.FullName -Destination "$($File.Directory)\$($File.BaseName)_QP$($EncoderLevel)_HEVC.mp4"
                 } elseif($File.Length -gt $NewFile.Length)
                 {
                     Write-Host Compressed file is smaller
@@ -76,30 +93,43 @@ function Compress-File($File)
             return
         }
         
-        Write-Host "AV1 Encoding is in very early testing. So early that it's not even implemented. Will update as I get GPUs."
-        return
-        
-        # Below is copied from HEVC code. There is no AV1 compression in this script yet
+        #Write-Host "AV1 Encoding is in very early testing. So early that it's not even implemented. Will update as I get GPUs."
+        #return
+		
+		$Encoder = "av1_"
+		
+		if($AMD)
+		{
+			$Encoder += "amf"
+		} elseif($Intel)
+		{
+			$Encoder += "qsv"
+		} else
+		{
+			$Encoder += "nvenc"
+		}
+		
+		$EncoderLevel = 100
         
         if($PSCmdlet.MyInvocation.BoundParameters["Verbose"].IsPresent)
         {
-            ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v hevc_nvenc -rc constqp -qp 20 -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_CRF20_AV1.mp4"
+            ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v $Encoder -rc constqp -qp $EncoderLevel -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_QP$($EncoderLevel)_AV1.mp4"
         } else
         {
-            ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v hevc_nvenc -rc constqp -qp 20 -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_CRF20_AV1.mp4" -hide_banner -loglevel error -stats
+            ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v $Encoder -rc constqp -qp $EncoderLevel -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_QP$($EncoderLevel)_AV1.mp4" -hide_banner -loglevel error -stats
         }
 
         if($AutoDelete -and $LastExitCode -eq 0)
         {
-            $NewFile = Get-Item -Path "$($File.Directory)\$($File.BaseName)_CRF20_AV1.mp4"
+            $NewFile = Get-Item -Path "$($File.Directory)\$($File.BaseName)_QP$($EncoderLevel)_AV1.mp4"
 
-            if(Test-Path "$($File.Directory)\$($File.BaseName)_CRF20_AV1.mp4")
+            if(Test-Path "$($File.Directory)\$($File.BaseName)_QP$($EncoderLevel)_AV1.mp4")
             {
                 if($NewFile.Length -gt $File.Length)
                 {
                     Write-Host Original file is smaller
                     $NewFile | Remove-Item
-                    Move-Item -Path $File.FullName -Destination "$($File.Directory)\$($File.BaseName)_CRF20_AV1.mp4"
+                    Move-Item -Path $File.FullName -Destination "$($File.Directory)\$($File.BaseName)_QP$($EncoderLevel)_AV1.mp4"
                 } elseif($File.Length -gt $NewFile.Length)
                 {
                     Write-Host Compressed file is smaller

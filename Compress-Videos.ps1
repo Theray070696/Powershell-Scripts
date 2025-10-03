@@ -59,13 +59,25 @@ function Compress-File($File)
 		
 		$EncoderLevel = 20
         
-        if($PSCmdlet.MyInvocation.BoundParameters["Verbose"].IsPresent)
-        {
-            ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v $Encoder -rc constqp -qp $EncoderLevel -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_QP$($EncoderLevel)_HEVC.mp4"
-        } else
-        {
-            ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v $Encoder -rc constqp -qp $EncoderLevel -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_QP$($EncoderLevel)_HEVC.mp4" -hide_banner -loglevel error -stats
-        }
+		if(-not $AMD)
+		{
+			if($PSCmdlet.MyInvocation.BoundParameters["Verbose"].IsPresent)
+			{
+				ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v $Encoder -rc constqp -qp $EncoderLevel -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_QP$($EncoderLevel)_HEVC.mp4"
+			} else
+			{
+				ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v $Encoder -rc constqp -qp $EncoderLevel -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_QP$($EncoderLevel)_HEVC.mp4" -hide_banner -loglevel error -stats
+			}
+		} else # FUCK YOU BALTIMORE
+		{
+			if($PSCmdlet.MyInvocation.BoundParameters["Verbose"].IsPresent)
+			{
+				ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v $Encoder -rc cqp -qp_i $EncoderLevel -qp_p $EncoderLevel -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_QP$($EncoderLevel)_HEVC.mp4"
+			} else
+			{
+				ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v $Encoder -rc cqp -qp_i $EncoderLevel -qp_p $EncoderLevel -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_QP$($EncoderLevel)_HEVC.mp4" -hide_banner -loglevel error -stats
+			}
+		}
 
         if($AutoDelete -and $LastExitCode -eq 0)
         {

@@ -17,7 +17,21 @@ param
 	[switch] $Intel
 )
 
-$Version = 1.2.1
+$Version = 1.2.2
+
+function Normalize-BaseName
+{
+    param([string]$Base)
+    $n = $Base
+    do
+	{
+        $before = $n
+        # Strip encoding suffixes (_CRFxx, _crfxx, optional codec)
+        $n = $n -replace '(?i)_(CRF\d+|QP\d+)(_(AV1|HEVC))?$', ''
+        $n = $n -replace '(?i)_(AV1|HEVC)$', ''
+    } while($n -ne $before)
+    return $n
+}
 
 function CompleteNotification
 {
@@ -58,38 +72,40 @@ function Compress-File($File)
 		}
 		
 		$EncoderLevel = 20
+		
+		$OutPath = "$($File.Directory)\$(Normalize-BaseName $File.BaseName)_QP$($EncoderLevel)_HEVC.mp4"
         
 		if(-not $AMD)
 		{
 			if($PSCmdlet.MyInvocation.BoundParameters["Verbose"].IsPresent)
 			{
-				ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v $Encoder -rc constqp -qp $EncoderLevel -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_QP$($EncoderLevel)_HEVC.mp4"
+				ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v $Encoder -rc constqp -qp $EncoderLevel -b:v 0K -c:a aac -b:a 384k "$OutPath"
 			} else
 			{
-				ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v $Encoder -rc constqp -qp $EncoderLevel -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_QP$($EncoderLevel)_HEVC.mp4" -hide_banner -loglevel error -stats
+				ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v $Encoder -rc constqp -qp $EncoderLevel -b:v 0K -c:a aac -b:a 384k "$OutPath" -hide_banner -loglevel error -stats
 			}
 		} else # FUCK YOU BALTIMORE
 		{
 			if($PSCmdlet.MyInvocation.BoundParameters["Verbose"].IsPresent)
 			{
-				ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v $Encoder -rc cqp -qp_i $EncoderLevel -qp_p $EncoderLevel -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_QP$($EncoderLevel)_HEVC.mp4"
+				ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v $Encoder -rc cqp -qp_i $EncoderLevel -qp_p $EncoderLevel -b:v 0K -c:a aac -b:a 384k "$OutPath"
 			} else
 			{
-				ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v $Encoder -rc cqp -qp_i $EncoderLevel -qp_p $EncoderLevel -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_QP$($EncoderLevel)_HEVC.mp4" -hide_banner -loglevel error -stats
+				ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v $Encoder -rc cqp -qp_i $EncoderLevel -qp_p $EncoderLevel -b:v 0K -c:a aac -b:a 384k "$OutPath" -hide_banner -loglevel error -stats
 			}
 		}
 
         if($AutoDelete -and $LastExitCode -eq 0)
         {
-            $NewFile = Get-Item -Path "$($File.Directory)\$($File.BaseName)_QP$($EncoderLevel)_HEVC.mp4"
+            $NewFile = Get-Item -Path "$OutPath"
 
-            if(Test-Path "$($File.Directory)\$($File.BaseName)_QP$($EncoderLevel)_HEVC.mp4")
+            if(Test-Path "$OutPath")
             {
                 if($NewFile.Length -gt $File.Length)
                 {
                     Write-Host Original file is smaller
                     $NewFile | Remove-Item
-                    Move-Item -Path $File.FullName -Destination "$($File.Directory)\$($File.BaseName)_QP$($EncoderLevel)_HEVC.mp4"
+                    Move-Item -Path $File.FullName -Destination "$OutPath"
                 } elseif($File.Length -gt $NewFile.Length)
                 {
                     Write-Host Compressed file is smaller
@@ -122,26 +138,28 @@ function Compress-File($File)
 		}
 		
 		$EncoderLevel = 100
+		
+		$OutPath = "$($File.Directory)\$(Normalize-BaseName $File.BaseName)_QP$($EncoderLevel)_AV1.mp4"
         
         if($PSCmdlet.MyInvocation.BoundParameters["Verbose"].IsPresent)
         {
-            ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v $Encoder -rc constqp -qp $EncoderLevel -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_QP$($EncoderLevel)_AV1.mp4"
+            ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v $Encoder -rc constqp -qp $EncoderLevel -b:v 0K -c:a aac -b:a 384k "$OutPath"
         } else
         {
-            ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v $Encoder -rc constqp -qp $EncoderLevel -b:v 0K -c:a aac -b:a 384k "$($File.Directory)\$($File.BaseName)_QP$($EncoderLevel)_AV1.mp4" -hide_banner -loglevel error -stats
+            ffmpeg -hwaccel auto -i $File.FullName -map 0:v -map 0:a? -c:v $Encoder -rc constqp -qp $EncoderLevel -b:v 0K -c:a aac -b:a 384k "$OutPath" -hide_banner -loglevel error -stats
         }
 
         if($AutoDelete -and $LastExitCode -eq 0)
         {
-            $NewFile = Get-Item -Path "$($File.Directory)\$($File.BaseName)_QP$($EncoderLevel)_AV1.mp4"
+            $NewFile = Get-Item -Path "$OutPath"
 
-            if(Test-Path "$($File.Directory)\$($File.BaseName)_QP$($EncoderLevel)_AV1.mp4")
+            if(Test-Path "$OutPath")
             {
                 if($NewFile.Length -gt $File.Length)
                 {
                     Write-Host Original file is smaller
                     $NewFile | Remove-Item
-                    Move-Item -Path $File.FullName -Destination "$($File.Directory)\$($File.BaseName)_QP$($EncoderLevel)_AV1.mp4"
+                    Move-Item -Path $File.FullName -Destination "$OutPath"
                 } elseif($File.Length -gt $NewFile.Length)
                 {
                     Write-Host Compressed file is smaller
